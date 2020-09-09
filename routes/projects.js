@@ -18,6 +18,13 @@ router.route("/").get((req, res) => {
   //   });
 });
 
+/// get array of  project tasks
+router.route("/tasks/:id").get((req, res) => {
+  Project.findById(req.params.id)
+    .then((project) => res.json(project.tasks))
+    .catch((err) => res.status(400).json("Error: " + err));
+});
+
 router.route("/add").post((req, res) => {
   const name = req.body.name;
   const content = req.body.content;

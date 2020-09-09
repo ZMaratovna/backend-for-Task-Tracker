@@ -6,9 +6,17 @@ router.route("/").get((req, res) => {
     .then((tasks) => res.json(tasks))
     .catch((err) => res.status(400).json("Error: ") + err);
 });
+///get task by task_Id
 router.route("/:id").get((req, res) => {
   Task.findById(req.params.id)
     .then((task) => res.json(task))
+    .catch((err) => res.status(400).json("Error: ") + err);
+});
+
+///get comments from task
+router.route("/project/:id").get((req, res) => {
+  Task.findById(req.params.id)
+    .then((task) => res.json(task.comments))
     .catch((err) => res.status(400).json("Error: ") + err);
 });
 
