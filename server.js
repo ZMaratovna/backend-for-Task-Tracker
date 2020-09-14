@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-
 require("dotenv").config();
 
 const app = express();
@@ -34,6 +33,10 @@ app.use("/tasks", tasksRouter);
 
 const commentsRouter = require("./routes/comments");
 app.use("/comments", commentsRouter);
+
+const registrRouter = require("./routes/registr");
+app.use("/register", registrRouter);
+app.use("/confirmation", registrRouter);
 
 app.listen(port, () => {
   console.log(`server is running on port ${port}...`);

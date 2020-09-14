@@ -13,9 +13,13 @@
   "author": "Zhanna Kaymedenova",
   "license": "ISC",
   "dependencies": {
+    "@sendgrid/mail": "^7.2.5",
+    "bcrypt": "^5.0.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "mongoose": "^5.10.3"
+    "lodash": "^4.17.20",
+    "mongoose": "^5.10.3",
+    "nodemailer-sendgrid-transport": "^0.2.0"
   }
 }

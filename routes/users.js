@@ -42,24 +42,5 @@ router.route("/tasks/:id").get((req, res) => {
     .then((user) => res.json(user.tasks))
     .catch((err) => res.status(400).json("Error:" + err));
 });
-//add user object
-router.route("/add").post((req, res) => {
-  const username = req.body.username;
-  const position = req.body.position;
-  const login = req.body.login;
-  const password = req.body.password;
-
-  const newUser = new User({
-    username,
-    position,
-    login,
-    password,
-  });
-
-  newUser
-    .save()
-    .then(() => res.json("User added!"))
-    .catch((err) => res.status(400).json("Error:" + err));
-});
 
 module.exports = router;
