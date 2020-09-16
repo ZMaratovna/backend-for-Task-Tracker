@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const Comment = require("../models/comment.model");
-
+const auth = require("../middleware/auth");
 router.route("/").get((req, res) => {
   Comment.find()
     .then((comments) => res.json(comments))

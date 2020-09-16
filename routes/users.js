@@ -1,8 +1,9 @@
 const router = require("express").Router();
 let User = require("../models/user.model");
+const auth = require("../middleware/auth");
 
 ///return Users arrays (all, developers and managers)
-router.route("/").get((req, res) => {
+router.get("/", auth, (req, res) => {
   User.find().then((users) => {
     const devs = users.filter((user) => user.position === "developer");
     const mng = users.filter((user) => user.position === "Manager");

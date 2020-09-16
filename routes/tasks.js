@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const Task = require("../models/task.model");
+const auth = require("../middleware/auth");
 
 router.route("/").get((req, res) => {
   Task.find()
@@ -57,7 +58,7 @@ router.route("/update/:id").post((req, res) => {
 
     task
       .save()
-      .then(() => res.json("Tasl updated!"))
+      .then(() => res.json("Task updated!"))
       .catch((err) => res.status(400).json("Error: " + err));
   });
 });

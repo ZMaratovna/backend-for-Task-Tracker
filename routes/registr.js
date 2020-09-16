@@ -2,7 +2,6 @@ const crypto = require("crypto");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const { User, validate } = require("../models/user.model");
-const Token = require("../models/verification.model");
 const router = require("express").Router();
 require("dotenv").config();
 router.route("/").post(async (req, res) => {
@@ -22,6 +21,8 @@ router.route("/").post(async (req, res) => {
         position: req.body.position,
         email: req.body.email,
         password: req.body.password,
+        activeToken: crypto.randomBytes(16).toString("hex"),
+        activeExpires: Date.now() + 24 * 3600 * 1000,
       });
       /// encrypt the user password
       const salt = await bcrypt.genSalt(10);
@@ -29,30 +30,22 @@ router.route("/").post(async (req, res) => {
       await user.save();
       console.log("newUser", user);
 
-      //Create verification token
-      const token = new Token({
-        _userId: user._id,
-        token: crypto.randomBytes(16).toString("hex"),
-      });
-      await token.save();
-      console.log("token", token);
-      res.send({ user, token });
+      res.send({ user });
 
       //Send mail to user
-
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
       const msg = {
         from: "KaymedenovaZ@yandex.ru",
-        to: user.email,
+        // to: user.email,
+        to: "zh.kaymedenova@gmail.com",
         subject: "Account Verification Token",
         text:
           "Hello, \n\n" +
           "Please, verify your account by clicking the link: \nhttp://" +
           req.headers.host +
-          "/confirmaton/" +
-          token.token +
-          ".\n",
+          "/confirmation/" +
+          user.activeToken,
       };
       sgMail.send(msg);
     }
