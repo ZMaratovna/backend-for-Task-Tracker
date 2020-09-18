@@ -8,12 +8,11 @@ router.route("/").post(async (req, res) => {
   try {
     const { error } = validate(req.body);
     if (error) {
-      console.log("validation error ", error);
-      return res.send(error.details[0].message);
+      return res.status(200).send(error.details[0].message);
     }
     let user = await User.findOne({ email: req.body.email });
     if (user) {
-      return res.send("That user already exisits!");
+      return res.status(400).send("That user already exisits!");
     } else {
       //// Add new user
       user = new User({
@@ -28,9 +27,13 @@ router.route("/").post(async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(user.password, salt);
       await user.save();
-      console.log("newUser", user);
 
-      res.send({ user });
+      res.status(201).send({
+        username: user.username,
+        position: user.position,
+        email: user.email,
+        id: user._id,
+      });
 
       //Send mail to user
       sgMail.setApiKey(process.env.SENDGRID_API_KEY);

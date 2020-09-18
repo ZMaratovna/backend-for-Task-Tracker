@@ -1,5 +1,6 @@
 const router = require("express").Router();
-let User = require("../models/user.model");
+let { User } = require("../models/user.model");
+let Project = require("../models/project.model");
 const auth = require("../middleware/auth");
 
 ///return Users arrays (all, developers and managers)
@@ -30,11 +31,21 @@ router.route("/").get((req, res) => {
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
-///return array of user projects
-router.route("/projects/:id").get((req, res) => {
-  User.findById(req.params.id)
-    .then((user) => res.json(user.projects))
-    .catch((err) => res.status(400).json("Error:" + err));
+///return array of manager projects
+router.route("/projects/:id").get(async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (user.position === "manager") {
+    const projects = await Project.find({ manager: req.params.id });
+    return res.send(projects.map((p) => p.manager.name));
+  } else {
+    const developer = await User.findById(req.params.id);
+    console.log("developer projects", developer.projects);
+    if (developer.projects.length > 0) {
+      developer.projects.forEach((objId) =>
+        Project.findOne({ _id: objId }).then((obj) => res.send(obj.name))
+      );
+    } else res.send([]);
+  }
 });
 
 //get array of user tasks

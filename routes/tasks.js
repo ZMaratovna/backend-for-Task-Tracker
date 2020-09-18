@@ -1,7 +1,10 @@
 const router = require("express").Router();
 const Task = require("../models/task.model");
+const { User } = require("../models/user.model");
+const Project = require("../models/project.model");
 const auth = require("../middleware/auth");
 
+/// Get list of all tasks
 router.route("/").get((req, res) => {
   Task.find()
     .then((tasks) => res.json(tasks))
@@ -21,41 +24,74 @@ router.route("/project/:id").get((req, res) => {
     .catch((err) => res.status(400).json("Error: ") + err);
 });
 
-router.route("/add").post((req, res) => {
-  const content = req.body.content;
-  const comments = req.body.comments;
-  const status = req.body.status;
-  const executor = req.body.developer;
-  const project = req.body.project;
-
+///  Initial task addition
+router.route("/add/:projectId").post(async (req, res) => {
   const newTask = new Task({
-    content,
-    comments,
-    status,
-    executor,
-    project,
+    content: req.body.content,
+    comments: [],
+    status: "waiting",
+    executor: "",
+    project: req.params.projectId,
   });
+  await newTask.save();
+  await Project.updateOne(
+    { _id: req.params.projectId },
+    {
+      $push: { tasks: newTask._id },
+    }
+  );
+  await User.updateOne(
+    { _id: req.body.manager },
+    {
+      $push: { tasks: req.params.taskId },
+    }
+  );
 
-  newTask
-    .save()
-    .then(() => res.json("task added!"))
-    .catch((err) => res.status(400).json("Error :" + err));
+  res.send(newTask);
 });
 
-router.route("/:id").delete((req, res) => {
-  Task.findByIdAndDelete(req.params.id)
-    .then(() => res.json("task daleted!"))
+/// Assign task to developer and push taskId to developer and manager tasks array
+router.route("/assign/:taskId").post(async (req, res) => {
+  await User.updateOne(
+    { _id: req.body.developer },
+    {
+      $push: { tasks: req.params.taskId },
+    }
+  );
+
+  await Task.updateOne(
+    { _id: req.params.taskId },
+    {
+      $set: { executor: req.body.developer },
+    }
+  );
+  res.send("Task was assigned");
+});
+
+/// Change task status
+router.route("/status/:taskId").post(async (req, res) => {
+  await Task.updateOne(
+    { _id: req.params.taskId },
+    {
+      $set: { status: req.body.status },
+    }
+  );
+
+  res.send(`Status was changed to ${req.body.status}`);
+});
+
+/// Delete task
+router.route("/:taskId").delete((req, res) => {
+  Task.findByIdAndDelete(req.params.taskId)
+    .then(() => res.json("task deleted!"))
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
-router.route("/update/:id").post((req, res) => {
+///Edit task content
+router.route("/edit/:id").post((req, res) => {
   Task.findById(req.params.id).then((task) => {
     task.content = req.body.content;
-    task.comments = req.body.comments;
-    task.status = req.body.status;
     task.executor = req.body.developer;
-    task.project = req.body.project;
-
     task
       .save()
       .then(() => res.json("Task updated!"))
