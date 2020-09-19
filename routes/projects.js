@@ -57,7 +57,7 @@ router.route("/add/:id").post(async (req, res) => {
       tasks: [], //ref to Task
     });
     await newProject.save();
-    res.status(201).send("Mew project was created");
+    res.status(201).send("New project was created");
   } catch (e) {
     res.send("Error:" + e);
   }

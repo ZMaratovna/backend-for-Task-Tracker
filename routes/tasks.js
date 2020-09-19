@@ -30,7 +30,6 @@ router.route("/add/:projectId").post(async (req, res) => {
     content: req.body.content,
     comments: [],
     status: "waiting",
-    executor: "",
     project: req.params.projectId,
   });
   await newTask.save();

@@ -1,44 +1,54 @@
 const router = require("express").Router();
 const Comment = require("../models/comment.model");
-const auth = require("../middleware/auth");
+const Task = require("../models/task.model");
+
+/// Get all comments
+
 router.route("/").get((req, res) => {
   Comment.find()
     .then((comments) => res.json(comments))
     .catch((err) => res.status(400).json("Error: " + err));
 });
+/// Add new comment to task
+router.route("/add/:taskId").post(async (req, res) => {
+  //Add comment  to comments collection and Update task (push comment id in array of comments)
+  try {
+    const newComment = new Comment({
+      content: req.body.content,
+      task: req.params.taskId,
+      author: req.body.user,
+    });
+    await newComment.save();
 
-router.route("/add").post((req, res) => {
-  const content = req.body.content;
-  const comments = req.body.comments;
-  const task = req.body.task;
-  const author = req.body.author;
-
-  const newComment = new Comment({
-    content,
-    comments,
-    task,
-    author,
-  });
-
-  newComment
-    .save()
-    .then(() => res.json("new comment added!"))
-    .catch((err) => res.json("Error: " + err));
+    await Task.updateOne(
+      { _id: req.params.taskId },
+      {
+        $push: { comments: newComment._id },
+      }
+    );
+    return res.send(newComment);
+  } catch (e) {
+    return res.send("Error: " + e);
+  }
 });
-router.route("/:id").delete((req, res) => {
-  Comment.findByIdAndDelete(req.params.id)
-    .then(() => res.json("comment was deleted!"))
-    .catch((err) => res.json("Error: " + err));
-});
-router.route("/update/:id").post((req, res) => {
-  Comment.findById(req.params.id).then((comment) => {
-    comment.content = req.body.content;
 
-    comment
-      .save()
-      .then(() => res.json("comment was updated!"))
-      .catch((err) => res.status(400).json("Error: " + err));
-  });
+/// Delete comment
+router.route("/:id").delete(async (req, res) => {
+  await Comment.findByIdAndDelete(req.params.id);
+  res.send("comment was deleted");
+});
+
+/// Edit comment by user
+router.route("/update/:id").post(async (req, res) => {
+  await Comment.updateOne(
+    { _id: req.params.id },
+    {
+      $set: {
+        content: req.body.content,
+      },
+    }
+  );
+  res.send("comment was updated");
 });
 
 module.exports = router;
