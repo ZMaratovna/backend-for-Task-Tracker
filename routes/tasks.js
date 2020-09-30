@@ -10,6 +10,20 @@ router.route("/").get((req, res) => {
     .then((tasks) => res.json(tasks))
     .catch((err) => res.status(400).json("Error: ") + err);
 });
+
+// Get task from project
+router.route("/project/:projectId").get(async (req, res) => {
+  const tasks = await Task.find({ project: req.params.projectId });
+  res.send(tasks);
+});
+
+//Get tasks assigned to developer
+router.route("/:userId").get((req, res) => {
+  Task.find({ executor: req.params.userId })
+    .then((tasks) => res.send(tasks))
+    .catch((err) => res.status(400).json("Error: ") + err);
+});
+
 ///get task by task_Id
 router.route("/:id").get((req, res) => {
   Task.findById(req.params.id)
@@ -18,7 +32,7 @@ router.route("/:id").get((req, res) => {
 });
 
 ///get comments from task
-router.route("/project/:id").get((req, res) => {
+router.route("/comments/:id").get((req, res) => {
   Task.findById(req.params.id)
     .then((task) => res.json(task.comments))
     .catch((err) => res.status(400).json("Error: ") + err);
@@ -51,8 +65,9 @@ router.route("/add/:projectId").post(async (req, res) => {
 
 /// Assign task to developer and push taskId to developer and manager tasks array
 router.route("/assign/:taskId").post(async (req, res) => {
+  console.log(req.body);
   await User.updateOne(
-    { _id: req.body.developer },
+    { _id: req.body.devId },
     {
       $push: { tasks: req.params.taskId },
     }
@@ -61,14 +76,17 @@ router.route("/assign/:taskId").post(async (req, res) => {
   await Task.updateOne(
     { _id: req.params.taskId },
     {
-      $set: { executor: req.body.developer },
+      $set: { executor: req.body.devId },
     }
   );
-  res.send("Task was assigned");
+  res.send({
+    executor: req.body.devId,
+  });
 });
 
 /// Change task status
 router.route("/status/:taskId").post(async (req, res) => {
+  console.log(req.body);
   await Task.updateOne(
     { _id: req.params.taskId },
     {
@@ -76,24 +94,24 @@ router.route("/status/:taskId").post(async (req, res) => {
     }
   );
 
-  res.send(`Status was changed to ${req.body.status}`);
+  res.send({ id: req.params.taskId, status: req.body.status });
 });
 
 /// Delete task
 router.route("/:taskId").delete((req, res) => {
   Task.findByIdAndDelete(req.params.taskId)
-    .then(() => res.json("task deleted!"))
+    .then((task) => res.send(task))
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
 ///Edit task content
-router.route("/edit/:id").post((req, res) => {
+router.route("/update/:id").post((req, res) => {
+  console.log(req.body);
   Task.findById(req.params.id).then((task) => {
     task.content = req.body.content;
-    task.executor = req.body.developer;
     task
       .save()
-      .then(() => res.json("Task updated!"))
+      .then(() => res.send(task))
       .catch((err) => res.status(400).json("Error: " + err));
   });
 });

@@ -4,15 +4,15 @@ let Project = require("../models/project.model");
 const auth = require("../middleware/auth");
 
 ///return Users arrays (all, developers and managers)
-router.get("/", auth, (req, res) => {
-  User.find().then((users) => {
-    const devs = users.filter((user) => user.position === "developer");
-    const mng = users.filter((user) => user.position === "Manager");
-    res
-      .json({ all: users, devs, mng })
-      .catch((err) => res.status(400).json("Error: " + err));
-  });
-});
+// router.get("/", auth, (req, res) => {
+//   User.find().then((users) => {
+//     const devs = users.filter((user) => user.position === "developer");
+//     const mng = users.filter((user) => user.position === "manager");
+//     res
+//       .send({ all: users, devs, mng })
+//       .catch((err) => res.status(400).json("Error: " + err));
+//   });
+// });
 
 //retun user object
 router.route("/:id").get((req, res) => {
@@ -23,28 +23,31 @@ router.route("/:id").get((req, res) => {
 
 //get array of developers
 router.route("/").get((req, res) => {
-  User.find()
-    .then((users) => {
-      console.log(users.filter((user) => user.position === "developer"));
-      res.json(users);
-    })
+  User.find({ position: "developer" })
+    .then((devs) => res.send(devs))
     .catch((err) => res.status(400).json("Error: " + err));
 });
 
-///return array of manager projects
+///return array of user projects
 router.route("/projects/:id").get(async (req, res) => {
   const user = await User.findById(req.params.id);
   if (user.position === "manager") {
     const projects = await Project.find({ manager: req.params.id });
-    return res.send(projects.map((p) => p.manager.name));
+    return res.send(projects);
   } else {
-    const developer = await User.findById(req.params.id);
-    console.log("developer projects", developer.projects);
-    if (developer.projects.length > 0) {
-      developer.projects.forEach((objId) =>
-        Project.findOne({ _id: objId }).then((obj) => res.send(obj.name))
-      );
-    } else res.send([]);
+    await User.findById(req.params.id)
+      .populate("projects")
+      .exec((err, developer) => res.send(developer.projects));
+    // if (developer.projects.length > 0) {
+    //   const projects = await developer.projects.map(async (objId) => {
+    //     const user = await Project.findOne({ _id: objId })
+    //       .populate("developers")
+    //       .exec(((err, project) => console.log(project.developers[0])));
+    //     console.log(user);
+    //   });
+    //   console.log("projects map", projects);
+    //   res.send(projects);
+    // } else res.send([]);
   }
 });
 

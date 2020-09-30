@@ -1,9 +1,10 @@
 const router = require("express").Router();
 const Project = require("../models/project.model");
 const { User } = require("../models/user.model");
-router.route("/").get((req, res) => {
-  Project.find()
-    .then((projects) => res.json(projects))
+
+router.route("/:projectId").get((req, res) => {
+  Project.find({ _id: req.params.projectId })
+    .then((project) => res.send(project))
     .catch((err) => res.status(400).json("Error: " + err));
 
   // Get the user name through project
@@ -57,7 +58,15 @@ router.route("/add/:id").post(async (req, res) => {
       tasks: [], //ref to Task
     });
     await newProject.save();
-    res.status(201).send("New project was created");
+    res.status(201).send(newProject);
+    await User.updateOne(
+      { _id: req.params.id },
+      {
+        $push: {
+          projects: newProject,
+        },
+      }
+    );
   } catch (e) {
     res.send("Error:" + e);
   }
@@ -66,11 +75,13 @@ router.route("/add/:id").post(async (req, res) => {
 /// Manager assign project to developer (devId)
 router.route("/assign").post(async (req, res) => {
   try {
+    console.log(req.body.project);
     await Project.updateOne(
       { _id: req.body.project },
       {
         $push: { developers: req.body.developer },
-      }
+      },
+      { unique: true, dropDups: true }
     );
 
     await User.updateOne(
@@ -79,22 +90,7 @@ router.route("/assign").post(async (req, res) => {
         $push: { projects: req.body.project },
       }
     );
-    res.send("Updated!");
-
-    //   const newProject = new Project({
-    //     name,
-    //     content,
-    //     manager,
-    //     developers,
-    //     tasks,
-    //   });
-    //   await newProject.save();
-    //   user.projects.push(newProject.id);
-    //   res.send(user.projects);
-    //   await user.save();
-    // } catch (e) {
-    //   res.send("Error:" + e);
-    // }
+    res.send({ executor: req.body.developer, project: req.body.project });
   } catch (e) {
     res.send(e);
   }

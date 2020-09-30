@@ -56,10 +56,25 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
+// userSchema.methods.generateAuthToken = function () {
+//   const token = jwt.sign({ _id: this._id }, config.get("PrivateKey"), {
+//     expiresIn: 3600,
+//   });
+//   return token;
+// };
 userSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign({ _id: this._id }, config.get("PrivateKey"), {
-    expiresIn: 3600,
-  });
+  const token = jwt.sign(
+    {
+      _id: this._id,
+      username: this.username,
+      email: this.email,
+      position: this.position,
+    },
+    "Secret",
+    {
+      expiresIn: 3600,
+    }
+  );
   return token;
 };
 

@@ -4,7 +4,7 @@ const _ = require("lodash");
 const Joi = require("joi");
 const express = require("express");
 const router = express.Router();
-const { User } = require("../models/user.model");
+const { User, generateAuthToken } = require("../models/user.model");
 
 router.post("/", async (req, res) => {
   const { error } = validate(req.body);
@@ -17,7 +17,7 @@ router.post("/", async (req, res) => {
     return res.status(400).send("Incorrect email or password");
   }
   if (!user.isActive) {
-    return res.status(400).send("Please confirm your email address before");
+    return res.send("Please confirm your email address before");
   }
 
   const validPassword = await bcrypt.compare(req.body.password, user.password);
@@ -26,9 +26,9 @@ router.post("/", async (req, res) => {
   }
 
   const token = user.generateAuthToken();
-  res
-    .header("x-auth-token", token)
-    .send(_.pick(user, ["_id", "username", "email"]));
+  res.header("x-auth-token", token);
+  //res.send(_.pick(user, ["_id", "username", "email", "position"]));
+  res.send(token);
 });
 
 function validate(req) {
