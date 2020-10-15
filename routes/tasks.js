@@ -2,7 +2,6 @@ const router = require("express").Router();
 const Task = require("../models/task.model");
 const { User } = require("../models/user.model");
 const Project = require("../models/project.model");
-const auth = require("../middleware/auth");
 
 /// Get list of all tasks
 router.route("/").get((req, res) => {
@@ -41,7 +40,9 @@ router.route("/comments/:id").get((req, res) => {
 ///  Initial task addition
 router.route("/add/:projectId").post(async (req, res) => {
   const newTask = new Task({
+    name: req.body.name,
     content: req.body.content,
+    manager: req.body.userId,
     comments: [],
     status: "waiting",
     project: req.params.projectId,
@@ -57,7 +58,8 @@ router.route("/add/:projectId").post(async (req, res) => {
     { _id: req.body.manager },
     {
       $push: { tasks: req.params.taskId },
-    }
+    },
+    { unique: true }
   );
 
   res.send(newTask);
@@ -65,19 +67,20 @@ router.route("/add/:projectId").post(async (req, res) => {
 
 /// Assign task to developer and push taskId to developer and manager tasks array
 router.route("/assign/:taskId").post(async (req, res) => {
-  console.log(req.body);
   await User.updateOne(
     { _id: req.body.devId },
     {
       $push: { tasks: req.params.taskId },
-    }
+    },
+    { unique: true }
   );
 
   await Task.updateOne(
     { _id: req.params.taskId },
     {
       $set: { executor: req.body.devId },
-    }
+    },
+    { unique: true }
   );
   res.send({
     executor: req.body.devId,
@@ -86,7 +89,6 @@ router.route("/assign/:taskId").post(async (req, res) => {
 
 /// Change task status
 router.route("/status/:taskId").post(async (req, res) => {
-  console.log(req.body);
   await Task.updateOne(
     { _id: req.params.taskId },
     {
@@ -98,15 +100,37 @@ router.route("/status/:taskId").post(async (req, res) => {
 });
 
 /// Delete task
-router.route("/:taskId").delete((req, res) => {
-  Task.findByIdAndDelete(req.params.taskId)
-    .then((task) => res.send(task))
-    .catch((err) => res.status(400).json("Error: " + err));
+router.route("/:taskId").delete(async (req, res) => {
+  const deleted = await Task.findByIdAndDelete(req.params.taskId);
+  if (deleted.executor && deleted.manager) {
+    await User.updateOne(
+      { _id: deleted.executor },
+      { $pull: { tasks: { $in: req.params.taskId } } }
+    );
+    await User.updateOne(
+      { _id: deleted.manager },
+      { $pull: { tasks: { $in: req.params.taskId } } }
+    );
+    await Project.updateOne(
+      { _id: deleted.project },
+      { $pull: { tasks: { $in: req.params.taskId } } }
+    );
+  } else {
+    await User.updateOne(
+      { _id: deleted.manager },
+      { $pull: { tasks: { $in: req.params.taskId } } }
+    );
+    await Project.updateOne(
+      { _id: deleted.project },
+      { $pull: { tasks: { $in: req.params.taskId } } }
+    );
+  }
+
+  res.send(deleted);
 });
 
 ///Edit task content
 router.route("/update/:id").post((req, res) => {
-  console.log(req.body);
   Task.findById(req.params.id).then((task) => {
     task.content = req.body.content;
     task

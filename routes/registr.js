@@ -12,7 +12,7 @@ router.route("/").post(async (req, res) => {
     }
     let user = await User.findOne({ email: req.body.email });
     if (user) {
-      return res.status(400).send("That user already exisits!");
+      return res.send("That user already exisits!");
     } else {
       //// Add new user
       user = new User({

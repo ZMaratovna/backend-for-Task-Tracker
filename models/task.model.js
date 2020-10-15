@@ -4,9 +4,17 @@ const Schema = mongoose.Schema;
 
 const taskSchema = new Schema(
   {
+    name: {
+      type: String,
+      required: true,
+    },
     content: {
       type: String,
       required: true,
+    },
+    manager: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
     comments: [{ type: Schema.Types.ObjectId, ref: "Comment" }],
     status: {
